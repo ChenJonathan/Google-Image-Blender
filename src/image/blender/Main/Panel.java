@@ -15,7 +15,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.*;
 
 /**
- * Sets up the application as a game. Mostly does scary swing stuff.
+ * Sets up the application. Mostly does scary swing stuff.
  */
 public class Panel extends JPanel implements Runnable
 {
@@ -41,7 +41,7 @@ public class Panel extends JPanel implements Runnable
 	private Input input;
 
 	/**
-	 * Constructs game panel.
+	 * Constructs panel.
 	 */
 	public Panel()
 	{
@@ -60,7 +60,7 @@ public class Panel extends JPanel implements Runnable
 	}
 
 	/**
-	 * Called when Game object is added to a container.
+	 * Called when object is added to a container.
 	 */
 	@Override
 	public void addNotify()
@@ -77,7 +77,7 @@ public class Panel extends JPanel implements Runnable
 	}
 
 	/**
-	 * Main game loop that aims for 30 FPS.
+	 * Main loop that aims for 30 FPS.
 	 */
 	@Override
 	public void run()
@@ -130,7 +130,7 @@ public class Panel extends JPanel implements Runnable
 	}
 
 	/**
-	 * Updates based on current game state and checks for inputs.
+	 * Updates based on current state and checks for inputs.
 	 */
 	private void update()
 	{
