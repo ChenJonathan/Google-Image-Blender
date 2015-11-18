@@ -18,11 +18,12 @@ import javax.imageio.ImageIO;
 public class Content
 {
 	public static ImageData MENU_BACKGROUND = new ImageData("/menu_background.png", 1920, 1080);
-	public static ImageData BUTTON_SEARCH = new ImageData("/button_search.png", 400, 106);
+	public static ImageData BUTTON_SEARCH = new ImageData("/button_search.png", 358, 106);
+	public static ImageData BUTTON_QUIT = new ImageData("/button_quit.png", 358, 106);
 	public static ImageData GLOW_SQUARE_CLICK = new ImageData("/glow_square_click.png", 230, 220);
 	public static ImageData GLOW_SQUARE_HOVER = new ImageData("/glow_square_hover.png", 230, 220);
-	public static ImageData GLOW_RECTANGLE_CLICK = new ImageData("/glow_rectangle_click.png", 460, 166);
-	public static ImageData GLOW_RECTANGLE_HOVER = new ImageData("/glow_rectangle_hover.png", 460, 166);
+	public static ImageData GLOW_RECTANGLE_CLICK = new ImageData("/glow_rectangle_click.png", 418, 166);
+	public static ImageData GLOW_RECTANGLE_HOVER = new ImageData("/glow_rectangle_hover.png", 418, 166);
 
 	// Storage
 	private static HashMap<ImageData, BufferedImage> imageMap;

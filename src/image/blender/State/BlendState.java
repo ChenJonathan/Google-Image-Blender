@@ -5,6 +5,7 @@ import image.blender.Manager.Content;
 import image.blender.Manager.Input;
 import image.blender.Manager.StateManager;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -22,7 +23,7 @@ import javax.imageio.ImageIO;
 public class BlendState extends State
 {
 	private int timer = 0;
-	private int waitTime = 30;
+	private int waitTime = MIN_WAIT_TIME * NUM_SPEEDS;
 	private boolean paused = false;
 
 	private int index = 0;
@@ -33,9 +34,12 @@ public class BlendState extends State
 	private boolean loading = true;
 	private ArrayList<String> loadStatus = new ArrayList<String>();
 
+	// TODO Increase margins
 	public static final int IMAGE_WIDTH = 1000;
 	public static final int IMAGE_HEIGHT = 1000;
-	public static final int NUM_PAGES = 1;
+	public static final int MIN_WAIT_TIME = 20;
+	public static final int NUM_SPEEDS = 3;
+	public static final int NUM_PAGES = 3;
 
 	public BlendState(StateManager sm)
 	{
@@ -87,6 +91,17 @@ public class BlendState extends State
 			{
 				// Loading the image
 				image = ImageIO.read(new URL(links.get(index)));
+				Thread load = new Thread(new Runnable()
+				{
+					public void run()
+					{
+						// content would be probably some Image class or byte[]
+
+						// or:
+						// InputStream in = Loc.openStream();
+						// read image from in
+					}
+				});
 
 				// Scaling and cropping the image
 				int xOffset = (image.getWidth() > image.getHeight())? (image.getWidth() - image.getHeight()) / 2 : 0;
@@ -189,9 +204,11 @@ public class BlendState extends State
 		}
 		else
 		{
+			// Draw images
 			g.drawImage(images.get(index), 40, 40, 800, 800, null);
 			g.drawImage(composite, 880, 40, IMAGE_WIDTH, IMAGE_HEIGHT, null);
 
+			// Draw buttons and glow effects
 			if(Input.mouseInRect(40, 880, 170, 160))
 			{
 				g.drawImage(
@@ -220,11 +237,95 @@ public class BlendState extends State
 			g.fillRect(460, 880, 170, 160);
 			g.fillRect(670, 880, 170, 160);
 
+			// Draw image counter
 			g.setColor(Color.WHITE);
 			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
 			FontMetrics fontMetrics = g.getFontMetrics();
 			String text = index + 1 + " / " + images.size();
 			g.drawString(text, 755 - fontMetrics.stringWidth(text) / 2, 960 + fontMetrics.getHeight() / 4);
+
+			// Draw hover tooltip
+			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+			fontMetrics = g.getFontMetrics();
+			String[] tooltipText = new String[0];
+			int tooltipX = Input.mouseX() + 20;
+			int tooltipY = Input.mouseY();
+			int tooltipWidth = 20;
+			int tooltipHeight = 10;
+			if(Input.mouseInRect(880, 40, IMAGE_WIDTH, IMAGE_HEIGHT))
+			{
+				tooltipText = new String[2];
+				tooltipText[0] = "Blended Image:";
+				tooltipText[1] = "The blended result of your Google image search.";
+			}
+			else if(Input.mouseInRect(40, 40, 800, 800))
+			{
+				tooltipText = new String[2];
+				tooltipText[0] = "Last Image:";
+				tooltipText[1] = "The last image added";
+			}
+			else if(Input.mouseInRect(40, 880, 170, 160))
+			{
+				tooltipText = new String[2];
+				tooltipText[0] = "Pause Button:";
+				tooltipText[1] = "Pauses the image blending process.";
+			}
+			else if(Input.mouseInRect(250, 880, 170, 160))
+			{
+				tooltipText = new String[3];
+				tooltipText[0] = "Speed Button:";
+				tooltipText[1] = "Changes the image blending speed.";
+				tooltipText[2] = "Switches between 1x, 2x, and 3x.";
+			}
+			else if(Input.mouseInRect(460, 880, 170, 160))
+			{
+				tooltipText = new String[2];
+				tooltipText[0] = "Exit:";
+				tooltipText[1] = "Return to the main menu.";
+			}
+			else if(Input.mouseInRect(670, 880, 170, 160))
+			{
+				tooltipText = new String[3];
+				tooltipText[0] = "Image Counter:";
+				tooltipText[1] = "Displays the number of images added and";
+				tooltipText[2] = "the total number of images to be added.";
+			}
+			for(String line : tooltipText)
+			{
+				tooltipWidth = Math.max(tooltipWidth, fontMetrics.stringWidth(line) + 20);
+				tooltipHeight += fontMetrics.getHeight() / 2 + 10;
+			}
+			// TODO Simplify with ternary conditions
+			if(tooltipX < 0)
+			{
+				tooltipX = 0;
+			}
+			else if(tooltipX + tooltipWidth + 20 > Panel.WIDTH)
+			{
+				tooltipX = Panel.WIDTH - tooltipWidth;
+			}
+			if(tooltipY < 0)
+			{
+				tooltipY = 0;
+			}
+			else if(tooltipY + tooltipHeight + 30 > Panel.HEIGHT)
+			{
+				tooltipY = Panel.HEIGHT - tooltipHeight;
+			}
+			g.setColor(Color.LIGHT_GRAY);
+			g.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+			g.setStroke(new BasicStroke(3));
+			g.setColor(Color.GRAY);
+			g.drawRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+			g.setColor(Color.BLACK);
+			if(tooltipText.length > 0)
+			{
+				for(int count = 0; count < tooltipText.length; count++)
+				{
+					String line = tooltipText[count];
+					g.drawString(line, tooltipX + 10, tooltipY + (fontMetrics.getHeight() / 2 + 10) * (count + 1));
+				}
+			}
 		}
 	}
 
@@ -244,18 +345,21 @@ public class BlendState extends State
 			{
 				if(Input.mouseInRect(40, 880, 170, 160))
 				{
+					// Pausing the process
 					paused = !paused;
 				}
 				else if(Input.mouseInRect(250, 880, 170, 160))
 				{
-					waitTime -= 10;
+					// Changing process speed
+					waitTime -= MIN_WAIT_TIME;
 					if(waitTime == 0)
 					{
-						waitTime = 30;
+						waitTime = MIN_WAIT_TIME * NUM_SPEEDS;
 					}
 				}
 				else if(Input.mouseInRect(460, 880, 170, 160))
 				{
+					// Quitting to main menu
 					sm.setState(StateManager.MENU);
 				}
 			}
