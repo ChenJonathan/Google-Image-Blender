@@ -120,7 +120,7 @@ public class MenuState extends State
 	{
 		if(Input.mouseLeftRelease())
 		{
-			if(lineIndex == text.size() && timer == FADE_DURATION)
+			if(lineIndex == text.size())
 			{
 				if(Input.mouseInRect(552, 900, 358, 106))
 				{

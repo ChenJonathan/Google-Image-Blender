@@ -20,10 +20,15 @@ import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClients;
+
 public class BlendState extends State
 {
 	private int timer = 0;
-	private int waitTime = MIN_WAIT_TIME * NUM_SPEEDS;
+	private int waitTime = WAIT_TIME * NUM_SPEEDS;
 	private boolean paused = false;
 
 	private int index = 0;
@@ -33,13 +38,16 @@ public class BlendState extends State
 
 	private boolean loading = true;
 	private ArrayList<String> loadStatus = new ArrayList<String>();
+	private RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(LOAD_TIME)
+			.setConnectTimeout(LOAD_TIME).setSocketTimeout(LOAD_TIME).build();
 
 	// TODO Increase margins
 	public static final int IMAGE_WIDTH = 1000;
 	public static final int IMAGE_HEIGHT = 1000;
-	public static final int MIN_WAIT_TIME = 20;
+	public static final int LOAD_TIME = 250; // In milliseconds
+	public static final int WAIT_TIME = 10; // In frames - At max speed setting
 	public static final int NUM_SPEEDS = 3;
-	public static final int NUM_PAGES = 3;
+	public static final int NUM_PAGES = 2;
 
 	public BlendState(StateManager sm)
 	{
@@ -50,8 +58,8 @@ public class BlendState extends State
 			for(int page = 0; page < NUM_PAGES; page++)
 			{
 				// String key = "AIzaSyDTW8BEDD4JRbTtyWqzQkIg5Wnd8pUUMP8";
-				String key = "AIzaSyAAAyt4P5JXEknZ2zqFHANY0PWiH2rxzP0";
 				// String id = "002593508493133637657:0vhkg_zxi2w";
+				String key = "AIzaSyAAAyt4P5JXEknZ2zqFHANY0PWiH2rxzP0";
 				String id = "000143486869577366964:oymz9n45neu";
 				String query = data.getSearch().replace(" ", "%20");
 				URL url = new URL("https://www.googleapis.com/customsearch/v1?key=" + key + "&cx=" + id + "&q=" + query
@@ -86,22 +94,14 @@ public class BlendState extends State
 	{
 		if(loading)
 		{
+			// Loading the image
 			BufferedImage image = null;
 			try
 			{
-				// Loading the image
-				image = ImageIO.read(new URL(links.get(index)));
-				Thread load = new Thread(new Runnable()
-				{
-					public void run()
-					{
-						// content would be probably some Image class or byte[]
-
-						// or:
-						// InputStream in = Loc.openStream();
-						// read image from in
-					}
-				});
+				HttpGet get = new HttpGet(links.get(index));
+				get.setConfig(requestConfig);
+				HttpResponse response = HttpClients.createDefault().execute(get);
+				image = ImageIO.read(response.getEntity().getContent());
 
 				// Scaling and cropping the image
 				int xOffset = (image.getWidth() > image.getHeight())? (image.getWidth() - image.getHeight()) / 2 : 0;
@@ -295,31 +295,18 @@ public class BlendState extends State
 				tooltipWidth = Math.max(tooltipWidth, fontMetrics.stringWidth(line) + 20);
 				tooltipHeight += fontMetrics.getHeight() / 2 + 10;
 			}
-			// TODO Simplify with ternary conditions
-			if(tooltipX < 0)
-			{
-				tooltipX = 0;
-			}
-			else if(tooltipX + tooltipWidth + 20 > Panel.WIDTH)
-			{
-				tooltipX = Panel.WIDTH - tooltipWidth;
-			}
-			if(tooltipY < 0)
-			{
-				tooltipY = 0;
-			}
-			else if(tooltipY + tooltipHeight + 30 > Panel.HEIGHT)
-			{
-				tooltipY = Panel.HEIGHT - tooltipHeight;
-			}
-			g.setColor(Color.LIGHT_GRAY);
-			g.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
-			g.setStroke(new BasicStroke(3));
-			g.setColor(Color.GRAY);
-			g.drawRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
-			g.setColor(Color.BLACK);
+			tooltipX = (tooltipX < 0)? 0 : tooltipX;
+			tooltipX = (tooltipX + tooltipWidth + 20 > Panel.WIDTH)? Panel.WIDTH - tooltipWidth : tooltipX;
+			tooltipY = (tooltipY < 0)? 0 : tooltipY;
+			tooltipY = (tooltipY + tooltipHeight + 30 > Panel.HEIGHT)? Panel.HEIGHT - tooltipHeight : tooltipY;
 			if(tooltipText.length > 0)
 			{
+				g.setColor(Color.LIGHT_GRAY);
+				g.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+				g.setStroke(new BasicStroke(3));
+				g.setColor(Color.GRAY);
+				g.drawRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+				g.setColor(Color.BLACK);
 				for(int count = 0; count < tooltipText.length; count++)
 				{
 					String line = tooltipText[count];
@@ -351,10 +338,10 @@ public class BlendState extends State
 				else if(Input.mouseInRect(250, 880, 170, 160))
 				{
 					// Changing process speed
-					waitTime -= MIN_WAIT_TIME;
+					waitTime -= WAIT_TIME;
 					if(waitTime == 0)
 					{
-						waitTime = MIN_WAIT_TIME * NUM_SPEEDS;
+						waitTime = WAIT_TIME * NUM_SPEEDS;
 					}
 				}
 				else if(Input.mouseInRect(460, 880, 170, 160))
