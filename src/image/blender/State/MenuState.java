@@ -39,8 +39,6 @@ public class MenuState extends State
 	@Override
 	public void update()
 	{
-		handleInput();
-
 		if(lineIndex <= text.size())
 		{
 			if(timer == FADE_DURATION)
@@ -56,6 +54,8 @@ public class MenuState extends State
 				timer++;
 			}
 		}
+
+		handleInput();
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class MenuState extends State
 	{
 		// Drawing the background
 		g.drawImage(Content.getImage(Content.MENU_BACKGROUND), 0, 0, null);
-		
+
 		// Drawing the title
 		g.setColor(Color.BLACK);
 		g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 72));
@@ -80,7 +80,7 @@ public class MenuState extends State
 		{
 			g.drawString(title, Panel.WIDTH / 2 - fontMetrics.stringWidth(title) / 2, 200);
 		}
-		
+
 		// Drawing description text
 		g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 40));
 		fontMetrics = g.getFontMetrics();
@@ -93,7 +93,7 @@ public class MenuState extends State
 			}
 			g.drawString(line, Panel.WIDTH / 2 - fontMetrics.stringWidth(line) / 2, 350 + count * 80);
 		}
-		
+
 		// Drawing buttons
 		if(lineIndex == text.size())
 		{
@@ -136,17 +136,9 @@ public class MenuState extends State
 					System.exit(0);
 				}
 			}
-			else if(lineIndex < text.size())
-			{
-				lineIndex++;
-				while(lineIndex < text.size() - 1 && text.get(lineIndex).equals(""))
-				{
-					lineIndex++;
-				}
-				timer = 0;
-			}
 			else
 			{
+				lineIndex = text.size();
 				timer = FADE_DURATION;
 			}
 		}

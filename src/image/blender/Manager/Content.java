@@ -17,13 +17,18 @@ import javax.imageio.ImageIO;
  */
 public class Content
 {
-	public static ImageData MENU_BACKGROUND = new ImageData("/menu_background.png", 1920, 1080);
-	public static ImageData BUTTON_SEARCH = new ImageData("/button_search.png", 358, 106);
-	public static ImageData BUTTON_QUIT = new ImageData("/button_quit.png", 358, 106);
-	public static ImageData GLOW_SQUARE_CLICK = new ImageData("/glow_square_click.png", 230, 220);
-	public static ImageData GLOW_SQUARE_HOVER = new ImageData("/glow_square_hover.png", 230, 220);
-	public static ImageData GLOW_RECTANGLE_CLICK = new ImageData("/glow_rectangle_click.png", 418, 166);
-	public static ImageData GLOW_RECTANGLE_HOVER = new ImageData("/glow_rectangle_hover.png", 418, 166);
+	public static ImageData MENU_BACKGROUND = new ImageData("/images/menu_background.png", 1920, 1080);
+	public static ImageData BUTTON_SEARCH = new ImageData("/images/button_search.png", 358, 106);
+	public static ImageData BUTTON_QUIT = new ImageData("/images/button_quit.png", 358, 106);
+	public static ImageData GLOW_SQUARE_CLICK = new ImageData("/images/glow_square_click.png", 210, 180);
+	public static ImageData GLOW_SQUARE_HOVER = new ImageData("/images/glow_square_hover.png", 210, 180);
+	public static ImageData GLOW_RECTANGLE_CLICK = new ImageData("/images/glow_rectangle_click.png", 418, 166);
+	public static ImageData GLOW_RECTANGLE_HOVER = new ImageData("/images/glow_rectangle_hover.png", 418, 166);
+	public static ImageData TOOL_COUNTER = new ImageData("/images/tool_counter.png", 150, 120);
+	public static ImageData TOOL_EXIT = new ImageData("/images/tool_exit.png", 150, 120);
+	public static ImageData TOOL_PAUSE = new ImageData("/images/tool_pause.png", 150, 120);
+	public static ImageData TOOL_PLAY = new ImageData("/images/tool_play.png", 150, 120);
+	public static ImageData TOOL_SPEED = new ImageData("/images/tool_speed.png", 150, 120);
 
 	// Storage
 	private static HashMap<ImageData, BufferedImage> imageMap;

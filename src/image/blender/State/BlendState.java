@@ -13,12 +13,15 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -28,7 +31,7 @@ import org.apache.http.impl.client.HttpClients;
 public class BlendState extends State
 {
 	private int timer = 0;
-	private int waitTime = WAIT_TIME * NUM_SPEEDS;
+	private int speed = 1;
 	private boolean paused = false;
 
 	private int index = 0;
@@ -41,13 +44,14 @@ public class BlendState extends State
 	private RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(LOAD_TIME)
 			.setConnectTimeout(LOAD_TIME).setSocketTimeout(LOAD_TIME).build();
 
-	// TODO Increase margins
-	public static final int IMAGE_WIDTH = 1000;
-	public static final int IMAGE_HEIGHT = 1000;
-	public static final int LOAD_TIME = 250; // In milliseconds
-	public static final int WAIT_TIME = 10; // In frames - At max speed setting
-	public static final int NUM_SPEEDS = 3;
-	public static final int NUM_PAGES = 2;
+	public static final int IMAGE_WIDTH = 960;
+	public static final int IMAGE_HEIGHT = 960;
+
+	public static final int LOAD_TIME = 200; // Time before image loading process is cancelled (Milliseconds)
+	public static final int NUM_PAGES = 2; // Each page is one query and ten images
+
+	public static final int WAIT_TIME = 30; // Time between images at lowest speed setting (Frames)
+	public static final int NUM_SPEEDS = 3; // Wait time should be divisible by each speed
 
 	public BlendState(StateManager sm)
 	{
@@ -92,6 +96,12 @@ public class BlendState extends State
 	@Override
 	public void update()
 	{
+		if(links.size() == 0)
+		{
+			JOptionPane.showMessageDialog(null, "Search query failed!");
+			sm.setState(StateManager.MENU);
+		}
+
 		if(loading)
 		{
 			// Loading the image
@@ -146,33 +156,30 @@ public class BlendState extends State
 		else if(!paused)
 		{
 			timer++;
-			if(timer % waitTime == 0)
+			if(timer % (WAIT_TIME / speed) == 0 && index < images.size() - 1)
 			{
-				if(index < images.size() - 1)
+				index++;
+
+				// Blending the image
+				for(int y = 0; y < IMAGE_HEIGHT; y++)
 				{
-					index++;
-
-					// Blending the image
-					for(int y = 0; y < IMAGE_HEIGHT; y++)
+					for(int x = 0; x < IMAGE_WIDTH; x++)
 					{
-						for(int x = 0; x < IMAGE_WIDTH; x++)
-						{
-							int oldPixel = composite.getRGB(x, y);
-							int oldRed = (oldPixel >> 16) & 0xFF;
-							int oldGreen = (oldPixel >> 8) & 0xFF;
-							int oldBlue = oldPixel & 0xFF;
+						int oldPixel = composite.getRGB(x, y);
+						int oldRed = (oldPixel >> 16) & 0xFF;
+						int oldGreen = (oldPixel >> 8) & 0xFF;
+						int oldBlue = oldPixel & 0xFF;
 
-							int newPixel = images.get(index).getRGB(x, y);
-							int newRed = (newPixel >> 16) & 0xFF;
-							int newGreen = (newPixel >> 8) & 0xFF;
-							int newBlue = newPixel & 0xFF;
+						int newPixel = images.get(index).getRGB(x, y);
+						int newRed = (newPixel >> 16) & 0xFF;
+						int newGreen = (newPixel >> 8) & 0xFF;
+						int newBlue = newPixel & 0xFF;
 
-							int blendedPixel = (index * oldRed + newRed) / (index + 1);
-							blendedPixel = (blendedPixel << 8) + (index * oldGreen + newGreen) / (index + 1);
-							blendedPixel = (blendedPixel << 8) + (index * oldBlue + newBlue) / (index + 1);
+						int blendedPixel = (index * oldRed + newRed) / (index + 1);
+						blendedPixel = (blendedPixel << 8) + (index * oldGreen + newGreen) / (index + 1);
+						blendedPixel = (blendedPixel << 8) + (index * oldBlue + newBlue) / (index + 1);
 
-							composite.setRGB(x, y, blendedPixel);
-						}
+						composite.setRGB(x, y, blendedPixel);
 					}
 				}
 			}
@@ -188,7 +195,7 @@ public class BlendState extends State
 		g.drawImage(Content.getImage(Content.MENU_BACKGROUND), 0, 0, null);
 		if(loading)
 		{
-			g.setColor(Color.WHITE);
+			g.setColor(Color.BLACK);
 			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
 			FontMetrics fontMetrics = g.getFontMetrics();
 			String text = "Attempting to load " + links.size() + " images. Please wait!";
@@ -205,44 +212,55 @@ public class BlendState extends State
 		else
 		{
 			// Draw images
-			g.drawImage(images.get(index), 40, 40, 800, 800, null);
-			g.drawImage(composite, 880, 40, IMAGE_WIDTH, IMAGE_HEIGHT, null);
+			g.setColor(Color.BLACK);
+			g.setStroke(new BasicStroke(2));
+			g.drawImage(images.get(index), 60, 60, 780, 780, null);
+			g.drawRect(60, 60, 780, 780);
+			g.drawImage(composite, 900, 60, IMAGE_WIDTH, IMAGE_HEIGHT, null);
+			g.drawRect(900, 60, IMAGE_WIDTH, IMAGE_HEIGHT);
 
 			// Draw buttons and glow effects
-			if(Input.mouseInRect(40, 880, 170, 160))
+			if(Input.mouseInRect(60, 900, 150, 120))
 			{
 				g.drawImage(
 						Content.getImage(Input.mouseLeftDown()? Content.GLOW_SQUARE_CLICK : Content.GLOW_SQUARE_HOVER),
-						10, 850, null);
+						30, 870, null);
 			}
-			else if(Input.mouseInRect(250, 880, 170, 160))
+			else if(Input.mouseInRect(270, 900, 150, 120))
 			{
 				g.drawImage(
 						Content.getImage(Input.mouseLeftDown()? Content.GLOW_SQUARE_CLICK : Content.GLOW_SQUARE_HOVER),
-						220, 850, null);
+						240, 870, null);
 			}
-			else if(Input.mouseInRect(460, 880, 170, 160))
+			else if(Input.mouseInRect(480, 900, 150, 120))
 			{
 				g.drawImage(
 						Content.getImage(Input.mouseLeftDown()? Content.GLOW_SQUARE_CLICK : Content.GLOW_SQUARE_HOVER),
-						430, 850, null);
+						450, 870, null);
 			}
-			else if(Input.mouseInRect(670, 880, 170, 160))
+			else if(Input.mouseInRect(690, 900, 150, 120))
 			{
-				g.drawImage(Content.getImage(Content.GLOW_SQUARE_HOVER), 640, 850, null);
+				g.drawImage(Content.getImage(Content.GLOW_SQUARE_HOVER), 660, 870, null);
 			}
-			g.setColor(Color.LIGHT_GRAY);
-			g.fillRect(40, 880, 170, 160);
-			g.fillRect(250, 880, 170, 160);
-			g.fillRect(460, 880, 170, 160);
-			g.fillRect(670, 880, 170, 160);
+			g.drawImage(Content.getImage(paused? Content.TOOL_PLAY : Content.TOOL_PAUSE), 60, 900, null);
+			g.drawImage(Content.getImage(Content.TOOL_SPEED), 270, 900, null);
+			g.drawImage(Content.getImage(Content.TOOL_EXIT), 480, 900, null);
+			g.drawImage(Content.getImage(Content.TOOL_COUNTER), 690, 900, null);
+
+			// Draw speed display
+			g.setColor(Color.DARK_GRAY);
+			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 80));
+			FontMetrics fontMetrics = g.getFontMetrics();
+			String text = speed + "";
+			g.drawString(text, 320 - fontMetrics.stringWidth(text) / 2, 960 + fontMetrics.getHeight() / 4);
 
 			// Draw image counter
-			g.setColor(Color.WHITE);
 			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
-			FontMetrics fontMetrics = g.getFontMetrics();
-			String text = index + 1 + " / " + images.size();
-			g.drawString(text, 755 - fontMetrics.stringWidth(text) / 2, 960 + fontMetrics.getHeight() / 4);
+			fontMetrics = g.getFontMetrics();
+			text = index + 1 + "";
+			g.drawString(text, 765 - fontMetrics.stringWidth(text) / 2, 935 + fontMetrics.getHeight() / 4);
+			text = images.size() + "";
+			g.drawString(text, 765 - fontMetrics.stringWidth(text) / 2, 990 + fontMetrics.getHeight() / 4);
 
 			// Draw hover tooltip
 			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
@@ -252,38 +270,38 @@ public class BlendState extends State
 			int tooltipY = Input.mouseY();
 			int tooltipWidth = 20;
 			int tooltipHeight = 10;
-			if(Input.mouseInRect(880, 40, IMAGE_WIDTH, IMAGE_HEIGHT))
+			if(Input.mouseInRect(900, 60, IMAGE_WIDTH, IMAGE_HEIGHT))
 			{
 				tooltipText = new String[2];
 				tooltipText[0] = "Blended Image:";
 				tooltipText[1] = "The blended result of your Google image search.";
 			}
-			else if(Input.mouseInRect(40, 40, 800, 800))
+			else if(Input.mouseInRect(60, 60, 780, 780))
 			{
 				tooltipText = new String[2];
 				tooltipText[0] = "Last Image:";
 				tooltipText[1] = "The last image added";
 			}
-			else if(Input.mouseInRect(40, 880, 170, 160))
+			else if(Input.mouseInRect(60, 900, 150, 120))
 			{
 				tooltipText = new String[2];
 				tooltipText[0] = "Pause Button:";
 				tooltipText[1] = "Pauses the image blending process.";
 			}
-			else if(Input.mouseInRect(250, 880, 170, 160))
+			else if(Input.mouseInRect(270, 900, 150, 120))
 			{
 				tooltipText = new String[3];
 				tooltipText[0] = "Speed Button:";
 				tooltipText[1] = "Changes the image blending speed.";
 				tooltipText[2] = "Switches between 1x, 2x, and 3x.";
 			}
-			else if(Input.mouseInRect(460, 880, 170, 160))
+			else if(Input.mouseInRect(480, 900, 150, 120))
 			{
 				tooltipText = new String[2];
 				tooltipText[0] = "Exit:";
 				tooltipText[1] = "Return to the main menu.";
 			}
-			else if(Input.mouseInRect(670, 880, 170, 160))
+			else if(Input.mouseInRect(690, 900, 150, 120))
 			{
 				tooltipText = new String[3];
 				tooltipText[0] = "Image Counter:";
@@ -321,6 +339,7 @@ public class BlendState extends State
 	{
 		if(loading)
 		{
+			// Halt loading process and return to main menu
 			if(Input.keyRelease(Input.ESCAPE))
 			{
 				sm.setState(StateManager.MENU);
@@ -330,23 +349,29 @@ public class BlendState extends State
 		{
 			if(Input.mouseLeftRelease())
 			{
-				if(Input.mouseInRect(40, 880, 170, 160))
+				if(Input.mouseInRect(60, 900, 150, 120))
 				{
 					// Pausing the process
 					paused = !paused;
 				}
-				else if(Input.mouseInRect(250, 880, 170, 160))
+				else if(Input.mouseInRect(270, 900, 150, 120))
 				{
 					// Changing process speed
-					waitTime -= WAIT_TIME;
-					if(waitTime == 0)
-					{
-						waitTime = WAIT_TIME * NUM_SPEEDS;
-					}
+					speed = (speed == NUM_SPEEDS)? 1 : speed + 1;
 				}
-				else if(Input.mouseInRect(460, 880, 170, 160))
+				else if(Input.mouseInRect(480, 900, 150, 120))
 				{
-					// Quitting to main menu
+					// Generating image and quitting to main menu
+					String fileName = data.getSearch().replace(" ", "_").toLowerCase();
+					try
+					{
+						ImageIO.write(composite, "PNG", new File(new File("").getAbsolutePath() + "/resources/results/"
+								+ fileName + ".png"));
+					}
+					catch(IOException e)
+					{
+						e.printStackTrace();
+					}
 					sm.setState(StateManager.MENU);
 				}
 			}
