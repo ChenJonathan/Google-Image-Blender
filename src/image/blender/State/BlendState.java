@@ -45,10 +45,10 @@ public class BlendState extends State
 			.setConnectTimeout(LOAD_TIME).setSocketTimeout(LOAD_TIME).build();
 
 	public static final int IMAGE_WIDTH = 960;
-	public static final int IMAGE_HEIGHT = 960;
+	public static final int IMAGE_HEIGHT = IMAGE_WIDTH;
 
-	public static final int LOAD_TIME = 200; // Time before image loading process is cancelled (Milliseconds)
-	public static final int NUM_PAGES = 2; // Each page is one query and ten images
+	public static final int LOAD_TIME = 250; // Time before image loading process is cancelled (Milliseconds)
+	public static final int NUM_PAGES = 10; // Each page is one query and ten images
 
 	public static final int WAIT_TIME = 30; // Time between images at lowest speed setting (Frames)
 	public static final int NUM_SPEEDS = 3; // Wait time should be divisible by each speed
@@ -61,10 +61,10 @@ public class BlendState extends State
 		{
 			for(int page = 0; page < NUM_PAGES; page++)
 			{
-				// String key = "AIzaSyDTW8BEDD4JRbTtyWqzQkIg5Wnd8pUUMP8";
-				// String id = "002593508493133637657:0vhkg_zxi2w";
-				String key = "AIzaSyAAAyt4P5JXEknZ2zqFHANY0PWiH2rxzP0";
-				String id = "000143486869577366964:oymz9n45neu";
+				String key = "AIzaSyDTW8BEDD4JRbTtyWqzQkIg5Wnd8pUUMP8";
+				String id = "002593508493133637657:0vhkg_zxi2w";
+				// String key = "AIzaSyAAAyt4P5JXEknZ2zqFHANY0PWiH2rxzP0";
+				// String id = "000143486869577366964:oymz9n45neu";
 				String query = data.getSearch().replace(" ", "%20");
 				URL url = new URL("https://www.googleapis.com/customsearch/v1?key=" + key + "&cx=" + id + "&q=" + query
 						+ "&searchType=image&fileType=jpg&alt=json&safe=medium&start=" + (page * 10 + 1));
@@ -156,30 +156,48 @@ public class BlendState extends State
 		else if(!paused)
 		{
 			timer++;
-			if(timer % (WAIT_TIME / speed) == 0 && index < images.size() - 1)
+			if(timer % (WAIT_TIME / speed) == 0)
 			{
-				index++;
-
-				// Blending the image
-				for(int y = 0; y < IMAGE_HEIGHT; y++)
+				if(index < images.size() - 1)
 				{
-					for(int x = 0; x < IMAGE_WIDTH; x++)
+					index++;
+
+					// Blending the image
+					for(int y = 0; y < IMAGE_HEIGHT; y++)
 					{
-						int oldPixel = composite.getRGB(x, y);
-						int oldRed = (oldPixel >> 16) & 0xFF;
-						int oldGreen = (oldPixel >> 8) & 0xFF;
-						int oldBlue = oldPixel & 0xFF;
+						for(int x = 0; x < IMAGE_WIDTH; x++)
+						{
+							int oldPixel = composite.getRGB(x, y);
+							int oldRed = (oldPixel >> 16) & 0xFF;
+							int oldGreen = (oldPixel >> 8) & 0xFF;
+							int oldBlue = oldPixel & 0xFF;
 
-						int newPixel = images.get(index).getRGB(x, y);
-						int newRed = (newPixel >> 16) & 0xFF;
-						int newGreen = (newPixel >> 8) & 0xFF;
-						int newBlue = newPixel & 0xFF;
+							int newPixel = images.get(index).getRGB(x, y);
+							int newRed = (newPixel >> 16) & 0xFF;
+							int newGreen = (newPixel >> 8) & 0xFF;
+							int newBlue = newPixel & 0xFF;
 
-						int blendedPixel = (index * oldRed + newRed) / (index + 1);
-						blendedPixel = (blendedPixel << 8) + (index * oldGreen + newGreen) / (index + 1);
-						blendedPixel = (blendedPixel << 8) + (index * oldBlue + newBlue) / (index + 1);
+							int blendedPixel = (index * oldRed + newRed) / (index + 1);
+							blendedPixel = (blendedPixel << 8) + (index * oldGreen + newGreen) / (index + 1);
+							blendedPixel = (blendedPixel << 8) + (index * oldBlue + newBlue) / (index + 1);
 
-						composite.setRGB(x, y, blendedPixel);
+							composite.setRGB(x, y, blendedPixel);
+						}
+					}
+					
+					if(index == images.size() - 1)
+					{
+						// Generating image
+						String fileName = data.getSearch().replace(" ", "_").toLowerCase();
+						try
+						{
+							ImageIO.write(composite, "PNG", new File(new File("").getAbsolutePath() + "/resources/results/"
+									+ fileName + ".png"));
+						}
+						catch(IOException e)
+						{
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -215,9 +233,9 @@ public class BlendState extends State
 			g.setColor(Color.BLACK);
 			g.setStroke(new BasicStroke(2));
 			g.drawImage(images.get(index), 60, 60, 780, 780, null);
-			g.drawRect(60, 60, 780, 780);
+			g.drawRect(61, 61, 778, 778);
 			g.drawImage(composite, 900, 60, IMAGE_WIDTH, IMAGE_HEIGHT, null);
-			g.drawRect(900, 60, IMAGE_WIDTH, IMAGE_HEIGHT);
+			g.drawRect(901, 61, IMAGE_WIDTH - 2, IMAGE_HEIGHT - 2);
 
 			// Draw buttons and glow effects
 			if(Input.mouseInRect(60, 900, 150, 120))
@@ -361,17 +379,7 @@ public class BlendState extends State
 				}
 				else if(Input.mouseInRect(480, 900, 150, 120))
 				{
-					// Generating image and quitting to main menu
-					String fileName = data.getSearch().replace(" ", "_").toLowerCase();
-					try
-					{
-						ImageIO.write(composite, "PNG", new File(new File("").getAbsolutePath() + "/resources/results/"
-								+ fileName + ".png"));
-					}
-					catch(IOException e)
-					{
-						e.printStackTrace();
-					}
+					// Quitting to main menu
 					sm.setState(StateManager.MENU);
 				}
 			}
